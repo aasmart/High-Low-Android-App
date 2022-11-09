@@ -15,8 +15,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
@@ -35,13 +33,19 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colors.background
                 ) {
-                   GameScreen()
+                    GameScreen()
                 }
             }
         }
     }
 }
 
+/**
+ * Creates the main game screen displayed to the player
+ *
+ * @param modifier Modifiers
+ * @param gameViewModel The view model the game interacts with
+ */
 @Composable
 fun GameScreen(
     modifier: Modifier = Modifier,
@@ -50,7 +54,7 @@ fun GameScreen(
     val gameUiState by gameViewModel.uiState.collectAsState()
 
     Column(
-       horizontalAlignment = Alignment.CenterHorizontally,
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         TitleText()
         GuessBar(
@@ -64,7 +68,11 @@ fun GameScreen(
             gameViewModel.makeGuess()
         }
 
-        GuessText(guessString = gameUiState.guessString, gameUiState.madeCorrectGuess, canPlayAgain = gameUiState.canPlayAgain, playAgain = { gameViewModel.restart() })
+        GuessElement(
+            guessString = gameUiState.guessString,
+            gameUiState.madeCorrectGuess,
+            canPlayAgain = gameUiState.canPlayAgain,
+            playAgain = { gameViewModel.restart() })
 
         RangeSelectionBar(
             lower = gameViewModel.lowerBound,
@@ -72,11 +80,14 @@ fun GameScreen(
             upper = gameViewModel.upperBound,
             updateLower = { gameViewModel.updateLower(it) },
             updateUpper = { gameViewModel.updateUpper(it) },
-            canModify = gameUiState.madeCorrectGuess
+            visible = gameUiState.madeCorrectGuess
         )
     }
 }
 
+/**
+ * The title text composable
+ */
 @Composable
 fun TitleText() {
     Text(
@@ -88,19 +99,33 @@ fun TitleText() {
     )
 }
 
+/**
+ * The bar and button that allows the user to input their guess
+ *
+ * @param guess The string value of the guess that is displayed inside the text field
+ * @param guessRange The range of values that the number is generated between
+ * @param valueChange Called when the value inside the text field is changed
+ * @param error If true, the text fields will display and error and the user
+ *              won't be able to enter their guess
+ * @param madeCorrectGuess If true, the user will not be able to change the value
+ *                         inside the text field or submit a new guess
+ * @param done Called when the user presses the done button on the keyboard
+ * @param click Called when the user clicks the "Guess" button
+ */
 @Composable
 fun GuessBar(
     guess: String,
-     guessRange: LongRange,
-     valueChange: (String) -> Unit,
-     error: Boolean,
-     madeCorrectGuess: Boolean,
-     done: KeyboardActionScope.() -> Unit,
-     click: () -> Unit
+    guessRange: LongRange,
+    valueChange: (String) -> Unit,
+    error: Boolean,
+    madeCorrectGuess: Boolean,
+    done: KeyboardActionScope.() -> Unit,
+    click: () -> Unit
 ) {
     Row(
         horizontalArrangement = Arrangement.Center,
     ) {
+        // The text field and error message
         Box() {
             OutlinedTextField(
                 value = guess,
@@ -114,7 +139,7 @@ fun GuessBar(
                 modifier = Modifier.padding(8.dp)
             )
 
-            if(error) {
+            if (error) {
                 Text(
                     text = "Invalid guess",
                     color = MaterialTheme.colors.error,
@@ -124,6 +149,7 @@ fun GuessBar(
             }
         }
 
+        // The button to submit the guess
         Button(
             onClick = click,
             enabled = !error && !madeCorrectGuess,
@@ -137,24 +163,36 @@ fun GuessBar(
     }
 }
 
+/**
+ * The Composable to input the range that the values are generated between
+ * @param visible True if the bar is visible
+ * @param isValidRange True if the current range inputted is valid. If invalid, an error will appear
+ * @param lower The string value of the lower bound that appears in the text field
+ * @param updateLower Called when the value inside the lower bound text field changes
+ * @param upper The string value of the upper bound that appears in the text field
+ * @param updateUpper Called when the value inside the lower bound text field changes
+ */
 @Composable
 fun RangeSelectionBar(
-    canModify: Boolean,
+    visible: Boolean,
     isValidRange: Boolean,
     lower: String, updateLower: (String) -> Unit,
     upper: String, updateUpper: (String) -> Unit
 ) {
-    if(!canModify)
+    if (!visible)
         return
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        // Title
         Text(
             text = "Random Number Range",
             fontWeight = FontWeight.Bold,
             textDecoration = TextDecoration.Underline
         )
+
+        // Range Text Fields
         Row(
             horizontalArrangement = Arrangement.Center,
         ) {
@@ -163,9 +201,11 @@ fun RangeSelectionBar(
                 onValueChange = updateLower,
                 keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
                 singleLine = true,
-                label = { Text(text = "Enter Lower Bound") },
+                label = { Text(text = "Lower Bound") },
                 isError = !isValidRange,
-                modifier = Modifier.padding(8.dp).width(180.dp),
+                modifier = Modifier
+                    .padding(8.dp)
+                    .width(180.dp),
             )
 
             OutlinedTextField(
@@ -173,13 +213,16 @@ fun RangeSelectionBar(
                 onValueChange = updateUpper,
                 keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
                 singleLine = true,
-                label = { Text(text = "Enter Upper Bound") },
-                modifier = Modifier.padding(8.dp).width(180.dp),
+                label = { Text(text = "Upper Bound") },
+                modifier = Modifier
+                    .padding(8.dp)
+                    .width(180.dp),
                 isError = !isValidRange,
             )
         }
 
-        if(!isValidRange) {
+        // Error message
+        if (!isValidRange) {
             Text(
                 text = "Make sure the values are positive and the lower bound is greater than the upper bound.",
                 color = MaterialTheme.colors.error,
@@ -191,8 +234,23 @@ fun RangeSelectionBar(
     }
 }
 
+/**
+ * Displays the guess feedback text and the button that allows the user to
+ * play again if their guess is correct
+ *
+ * @param guessString The guess feedback text displayed in the textbox
+ * @param madeCorrectGuess If the user has made a correct guess. If true, the "Play Again" button will be displayed
+ * @param canPlayAgain If true, the user may click the "Play Again" button.
+ * @param playAgain Called when the user clicks the "Play Again" button
+ */
 @Composable
-fun GuessText(guessString: String, madeCorrectGuess: Boolean, canPlayAgain: Boolean, playAgain: () -> Unit) {
+fun GuessElement(
+    guessString: String,
+    madeCorrectGuess: Boolean,
+    canPlayAgain: Boolean,
+    playAgain: () -> Unit
+) {
+    // Guess feedback text
     Text(
         text = guessString,
         fontSize = 16.sp,
@@ -201,7 +259,8 @@ fun GuessText(guessString: String, madeCorrectGuess: Boolean, canPlayAgain: Bool
         modifier = Modifier.padding(24.dp)
     )
 
-    if(madeCorrectGuess)
+    // Display the "Play Again" button if the user has made a correct guess
+    if (madeCorrectGuess)
         Button(
             onClick = playAgain,
             modifier = Modifier.offset(y = (-24).dp),
@@ -210,7 +269,6 @@ fun GuessText(guessString: String, madeCorrectGuess: Boolean, canPlayAgain: Bool
             Text(text = "Play Again")
         }
 }
-
 
 @Preview(showBackground = true)
 @Composable

@@ -1,6 +1,5 @@
 package com.example.firstappcompose
 
-import androidx.annotation.FloatRange
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -8,7 +7,6 @@ import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlin.random.Random
 
 class GameViewModel : ViewModel() {
     init {
@@ -18,8 +16,8 @@ class GameViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(GameUiState("Current guesses = 0", false, 0L..100L))
     val uiState: StateFlow<GameUiState> = _uiState.asStateFlow()
 
-    private var currentNumber: Long = 0;
-    private var guessCount: Int = 0;
+    private var currentNumber: Long = 0
+    private var guessCount: Int = 0
     var userGuess by mutableStateOf("")
         private set
 
@@ -29,31 +27,36 @@ class GameViewModel : ViewModel() {
     var upperBound by mutableStateOf("100")
         private set
 
+    /**
+     * Sets the random number guess based on a random number inside the given range
+     * @param range The range of values to generate the number between
+     */
     private fun pickRandomNumber(range: LongRange) {
-        currentNumber = range.shuffled().random().toLong();
+        currentNumber = range.shuffled().random().toLong()
     }
 
     /**
-     * A valid number is:
-     * list:
-     *     - Greater than zero
-     *     - A Long
-     *     - Not null
+     * Returns true if the number meets the following conditions:
+     * * Greater than zero
+     * * A Long
+     * * Not null
+     *
+     * @param number The number to check
      */
     fun isValidNumber(number: String): Boolean {
         val num: Long? = try { number.toLong() } catch (e: java.lang.NumberFormatException) { null }
 
         if(num == null || num < 0)
-            return false;
+            return false
 
-        return true;
+        return true
     }
 
     /**
      * Takes a String and updates the user's guess
      */
     fun updateGuess(guess: String) {
-        userGuess = guess;
+        userGuess = guess
         _uiState.value = GameUiState(guessString = "Current guesses = $guessCount", false, _uiState.value.guessRange)
     }
 
@@ -61,7 +64,7 @@ class GameViewModel : ViewModel() {
      * Takes a String and updates the RNG lower bound to said value
      */
     fun updateLower(lower: String) {
-        this.lowerBound = lower;
+        this.lowerBound = lower
         canPlayAgain()
     }
 
@@ -69,18 +72,23 @@ class GameViewModel : ViewModel() {
      * Takes a String and updates the RNG upper bound to said value
      */
     fun updateUpper(upper: String) {
-        this.upperBound = upper;
+        this.upperBound = upper
         canPlayAgain()
     }
 
+    /**
+     * Checks if the current range the number is generated between is valid
+     * @return True if the both range values are [valid numbers][isValidNumber] and
+     *         the lower bound is less than the upper bound
+     */
     fun isValidRange(): Boolean {
         if(!isValidNumber(upperBound) || !isValidNumber(lowerBound))
-            return false;
+            return false
 
         if(upperBound.toLong() < lowerBound.toLong())
-            return false;
+            return false
 
-        return true;
+        return true
     }
 
     /**
